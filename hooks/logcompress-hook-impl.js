@@ -20,7 +20,18 @@ const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
 const { compress } = require("./logcompress");
-const { crush } = require("../eso/ccr");
+const { crush, strip } = require("../eso/ccr");
+const { encode } = require("../eso");
+
+// Crushed rows are the token-cost payload ESON exists for (uniform record array).
+// Encode them; fall back to plain JSON if the array isn't schema-uniform (fail-open).
+function serializeView(view, dropped, total) {
+  try {
+    return encode({ dropped: dropped, total: total, rows: strip(view) });
+  } catch (error) {
+    return JSON.stringify(view);
+  }
+}
 
 // Forced (hook) crush is more conservative than the model-invoked `eson crush`:
 // the model can't veto it, so only clearly-bulk arrays qualify.
@@ -62,7 +73,7 @@ try {
       if (dropped > 0) {
         const hash = stash(text);
         const note = `\n[honey: kept ${array.length - dropped} of ${array.length} rows. Full array: \`eson retrieve ${hash}\`]`;
-        emit({ hookSpecificOutput: { hookEventName: "PostToolUse", updatedToolOutput: JSON.stringify(view) + note } });
+        emit({ hookSpecificOutput: { hookEventName: "PostToolUse", updatedToolOutput: serializeView(view, dropped, array.length) + note } });
         process.exit(0);
       }
     }

@@ -6,7 +6,7 @@ const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
 const { decode, encode } = require("../eso");
-const { crush } = require("../eso/ccr");
+const { crush, strip } = require("../eso/ccr");
 
 // CCR cache: one <hash>.json per crushed array. Override dir with HONEY_CCR_DIR.
 // Default is a fixed absolute dir so retrieve finds what crush wrote regardless
@@ -30,13 +30,18 @@ try {
     process.stdout.write(toJSON(decode(fs.readFileSync(0, "utf8"))) + "\n");
   } else if (cmd === "crush") {
     const array = JSON.parse(fs.readFileSync(0, "utf8"));
-    const { view, hash } = crush(array);
+    const { view, hash, dropped } = crush(array);
     if (hash) {
       const dir = ccrDir();
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, `${hash}.json`), JSON.stringify(array));
     }
-    process.stdout.write(JSON.stringify(view) + "\n");
+    // Route the crushed rows through ESON (what it's for); fall back to JSON
+    // if the array isn't schema-uniform (fail-open).
+    let out;
+    try { out = encode({ dropped: dropped, total: array.length, hash: hash || "", rows: strip(view) }); }
+    catch (error) { out = JSON.stringify(view) + "\n"; }
+    process.stdout.write(out);
   } else if (cmd === "stash") {
     // Offload an arbitrary text block (a file body, bulky tool output) and print a handle.
     // The model references the handle instead of re-pasting; `eso retrieve <hash>` restores
