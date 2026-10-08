@@ -43,6 +43,16 @@ function ccrInert(version) {
   return !CCR_FIXED_IN || cmpVersions(version, CCR_FIXED_IN) < 0;
 }
 
+// True when `name` resolves on PATH, so the warning never points at a missing CLI.
+function onPath(name, env) {
+  const exts = process.platform === "win32" ? ["", ".cmd", ".exe"] : [""];
+  return (env.PATH || "").split(path.delimiter).some(function (dir) {
+    return dir && exts.some(function (ext) {
+      try { fs.accessSync(path.join(dir, name + ext), fs.constants.X_OK); return true; } catch (e) { return false; }
+    });
+  });
+}
+
 function main() {
   const DIR = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude");
 
@@ -80,7 +90,9 @@ function main() {
     warnings.push(
       "honey: Claude Code " + cc + " ignores PostToolUse updatedToolOutput for the " +
       "built-in Bash tool (anthropics/claude-code#68951), so the Bash log compressor " +
-      "is inert on this version. Piping through `eson crush` still works."
+      "is inert on this version. " + (onPath("eson", process.env)
+        ? "Piping through `eson crush` still works."
+        : "Piping through `eson crush` works once the `eson` CLI is on PATH (it is not).")
     );
   }
 
@@ -116,4 +128,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { claudeCodeVersion, cmpVersions, ccrInert };
+module.exports = { claudeCodeVersion, cmpVersions, ccrInert, onPath };
