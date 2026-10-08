@@ -54,3 +54,13 @@ test("unaffected version → no systemMessage", () => {
   }));
   assert.strictEqual(out.systemMessage, undefined);
 });
+
+test("onPath finds an executable on PATH and misses an absent one", () => {
+  const { onPath } = require("./honey-session");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "honey-path-"));
+  const bin = path.join(dir, process.platform === "win32" ? "fake-cli.cmd" : "fake-cli");
+  fs.writeFileSync(bin, ""); fs.chmodSync(bin, 0o755);
+  assert.strictEqual(onPath("fake-cli", { PATH: dir }), true);
+  assert.strictEqual(onPath("fake-cli", { PATH: "" }), false);
+  assert.strictEqual(onPath("no-such-cli", { PATH: dir }), false);
+});
