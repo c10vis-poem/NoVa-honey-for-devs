@@ -7,6 +7,7 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 const { crush, strip, isSentinel, hashOf } = require("./ccr");
+const { decode } = require("./index");
 
 const logs = Array.from({ length: 100 }, (_, i) => ({
   id: i,
@@ -53,10 +54,8 @@ test("CLI crush caches originals and retrieve restores them losslessly", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ccr-"));
   const bin = path.join(__dirname, "..", "bin", "eso.js");
   const env = { ...process.env, HONEY_CCR_DIR: dir };
-  const view = JSON.parse(execFileSync("node", [bin, "crush"], { input: JSON.stringify(logs), env }));
-  const sentinel = view.find(isSentinel)[require("./ccr").SENTINEL_KEY];
-  const hash = sentinel.match(/<<ccr:(\w+) /)[1];
-  const restored = JSON.parse(execFileSync("node", [bin, "retrieve", hash], { env }));
+  const doc = decode(execFileSync("node", [bin, "crush"], { input: JSON.stringify(logs), env, encoding: "utf8" }));
+  const restored = JSON.parse(execFileSync("node", [bin, "retrieve", doc.hash], { env, encoding: "utf8" }));
   assert.deepEqual(restored, logs);
   fs.rmSync(dir, { recursive: true, force: true });
 });
