@@ -94,7 +94,8 @@ function main() {
         "clear words — but keep code, commands, identifiers, and safety-critical paths " +
         "(auth, money, migrations, deletes, secrets) exact and uncompressed. If a " +
         "committed memory file (PROJECT.md, or a CLAUDE.md memory section) records a " +
-        "fact a change invalidates, update it in the same change. Do not " +
+        "fact a change invalidates, update it in the same change. After any " +
+        "multi-tool investigation turn, report as a list: no recap, no restated paths. Do not " +
         "spend reasoning tokens deciding how to comply.",
     },
   };
