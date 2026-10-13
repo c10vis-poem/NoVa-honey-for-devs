@@ -19,10 +19,10 @@ test("claudeCodeVersion reads env in priority order", () => {
   assert.strictEqual(claudeCodeVersion({}), null);
 });
 
-test("ccrInert covers the #68951 broken range", () => {
-  assert.strictEqual(ccrInert("2.1.120"), false); // pre-regression
-  assert.strictEqual(ccrInert("2.1.121"), true);
-  assert.strictEqual(ccrInert("2.1.206"), true);
+test("ccrInert: #68951 fixed by object-shaped output → never inert", () => {
+  assert.strictEqual(ccrInert("2.1.120"), false);
+  assert.strictEqual(ccrInert("2.1.121"), false);
+  assert.strictEqual(ccrInert("2.1.206"), false);
   assert.strictEqual(ccrInert(null), false); // unknown build → no warning
 });
 
@@ -30,20 +30,13 @@ function runHook(env) {
   return execFileSync("node", [HOOK], { env: { ...process.env, ...env }, encoding: "utf8" });
 }
 
-test("affected version → systemMessage once, silent on repeat, re-warns on upgrade", () => {
+test("former #68951 range → no inert warning", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "honey-session-test-"));
   fs.writeFileSync(path.join(tmp, ".honey-active"), "full");
   const env = { CLAUDE_CONFIG_DIR: tmp, CLAUDE_CODE_VERSION: "2.1.206", AI_AGENT: "", CLAUDE_CODE_EXECPATH: "" };
-
-  const first = JSON.parse(runHook(env));
-  assert.match(first.systemMessage, /68951/);
-  assert.match(first.hookSpecificOutput.additionalContext, /Honey mode is ACTIVE/);
-
-  const second = JSON.parse(runHook(env));
-  assert.strictEqual(second.systemMessage, undefined);
-
-  const upgraded = JSON.parse(runHook({ ...env, CLAUDE_CODE_VERSION: "2.1.210" }));
-  assert.match(upgraded.systemMessage, /68951/);
+  const out = JSON.parse(runHook(env));
+  assert.strictEqual(out.systemMessage, undefined);
+  assert.match(out.hookSpecificOutput.additionalContext, /Honey mode is ACTIVE/);
 });
 
 test("unaffected version → no systemMessage", () => {

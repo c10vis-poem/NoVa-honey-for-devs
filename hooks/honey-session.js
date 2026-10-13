@@ -17,7 +17,7 @@ const path = require("path");
 // Regression surface is v2.1.121 (where the field shipped for built-in tools).
 // When upstream ships a fix, set CCR_FIXED_IN to that version.
 const CCR_BROKEN_SINCE = "2.1.121";
-const CCR_FIXED_IN = null;
+const CCR_FIXED_IN = "2.1.121"; // fixed in honey: object-shaped updatedToolOutput (#68951)
 
 function claudeCodeVersion(env) {
   let m = (env.CLAUDE_CODE_VERSION || "").match(/^\d+\.\d+\.\d+/);
